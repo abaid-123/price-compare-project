@@ -4,13 +4,20 @@ const jwt = require("jsonwebtoken");
 const pool = require("../db");
 
 const router = express.Router();
-const SECRET = "MY_SECRET_KEY";
+
+const SECRET = process.env.JWT_SECRET || "MY_SECRET_KEY";
 
 // ================= SIGNUP =================
 router.post("/signup", async (req, res) => {
   const { full_name, email, password } = req.body;
 
   try {
+    if (!full_name || !email || !password) {
+      return res.status(400).json({
+        message: "Full name, email and password are required",
+      });
+    }
+
     const userExists = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -30,7 +37,8 @@ router.post("/signup", async (req, res) => {
 
     res.json({ message: "Signup successful" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Signup error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
@@ -39,6 +47,12 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
@@ -76,7 +90,8 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET = "MY_SECRET_KEY";
+const SECRET = process.env.JWT_SECRET || "MY_SECRET_KEY";
 
 function auth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -9,7 +9,6 @@ function auth(req, res, next) {
     return res.status(401).json({ message: "No token" });
   }
 
-  // Accept: Authorization: Bearer token_here
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.split(" ")[1]
     : authHeader;
