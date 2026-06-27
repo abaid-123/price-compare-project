@@ -12,13 +12,13 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: allowedOrigins,
-    credentials: true
+    credentials: true,
   })
 );
 
@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    message: "Server is healthy"
+    message: "Server is healthy",
   });
 });
 
@@ -43,6 +43,10 @@ app.use("/api/settings", settingsRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
