@@ -36,3 +36,6 @@ __pycache__
 *.njsproj
 *.sln
 *.sw?
+
+*.dump
+backup.dump
