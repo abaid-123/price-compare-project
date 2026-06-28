@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Search,
-  Bell,
-  Package,
-  Star,
-  BarChart3,
-  Users,
-} from "lucide-react";
+import { Search, Bell, Package, Star, BarChart3, Users } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import { API_BASE_URL } from "../../config/api";
 
@@ -53,16 +46,17 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#050815] text-white flex">
       <AdminSidebar />
 
-      <main className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-8">
+      <main className="flex-1 w-full p-4 pt-24 md:p-6 md:pt-6 lg:p-8 overflow-x-hidden">
+        <div className="flex items-start justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-bold">Admin Dashboard</h2>
-            <p className="text-white/50">
+            <h2 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h2>
+            <p className="text-white/50 text-sm md:text-base">
               Manage users, products, and analytics
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Hide on mobile, show on tablet/desktop */}
+          <div className="hidden sm:flex items-center gap-3">
             <button className="p-3 rounded-xl bg-white/5 hover:bg-white/10">
               <Search size={18} />
             </button>
@@ -77,26 +71,26 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="rounded-2xl bg-[#0B1024] p-6 border border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div className="rounded-2xl bg-[#0B1024] p-5 md:p-6 border border-white/10">
             <Users className="mb-4 text-blue-400" />
             <p className="text-white/50 text-sm">Total Users</p>
             <h3 className="text-2xl font-bold">{totalUsers}</h3>
           </div>
 
-          <div className="rounded-2xl bg-[#0B1024] p-6 border border-white/10">
+          <div className="rounded-2xl bg-[#0B1024] p-5 md:p-6 border border-white/10">
             <Package className="mb-4 text-green-400" />
             <p className="text-white/50 text-sm">Products</p>
             <h3 className="text-2xl font-bold">{totalProducts}</h3>
           </div>
 
-          <div className="rounded-2xl bg-[#0B1024] p-6 border border-white/10">
+          <div className="rounded-2xl bg-[#0B1024] p-5 md:p-6 border border-white/10">
             <Star className="mb-4 text-yellow-400" />
             <p className="text-white/50 text-sm">Reviews</p>
             <h3 className="text-2xl font-bold">3,590</h3>
           </div>
 
-          <div className="rounded-2xl bg-[#0B1024] p-6 border border-white/10">
+          <div className="rounded-2xl bg-[#0B1024] p-5 md:p-6 border border-white/10">
             <BarChart3 className="mb-4 text-purple-400" />
             <p className="text-white/50 text-sm">Revenue</p>
             <h3 className="text-2xl font-bold">$12,450</h3>

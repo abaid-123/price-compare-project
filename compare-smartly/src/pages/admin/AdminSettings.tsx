@@ -1,28 +1,9 @@
 import { useEffect, useState } from "react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
-import {
-  User,
-  Globe,
-  Bot,
-  Package,
-  Tags,
-  Shield,
-  Bell,
-  KeyRound,
-  Save,
-  ArrowLeft,
-} from "lucide-react";
+import { User, Globe, Save, ArrowLeft } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 
-type SettingKey =
-  | "website"
-  | "profile"
-  | "scraper"
-  | "product"
-  | "category"
-  | "security"
-  | "notification"
-  | "api";
+type SettingKey = "website" | "profile";
 
 type WebsiteSettings = {
   websiteName: string;
@@ -52,7 +33,7 @@ const defaultWebsiteSettings: WebsiteSettings = {
 const settings = [
   {
     key: "website" as SettingKey,
-    title: "Website Settings",
+    title: "Admin / Website Settings",
     description: "Website name, logo, favicon, tagline, and contact email.",
     icon: <Globe size={22} className="text-cyan-400" />,
   },
@@ -61,48 +42,6 @@ const settings = [
     title: "Profile Settings",
     description: "Admin name, email, password change, and avatar management.",
     icon: <User size={22} className="text-blue-400" />,
-  },
-  {
-    key: "scraper" as SettingKey,
-    title: "Scraper Settings",
-    description:
-      "Enable or disable Daraz scraper, set max pages, products per search, and scraping interval.",
-    icon: <Bot size={22} className="text-green-400" />,
-  },
-  {
-    key: "product" as SettingKey,
-    title: "Product Settings",
-    description:
-      "Manage products per page, default sorting, reviews visibility, and category labels.",
-    icon: <Package size={22} className="text-purple-400" />,
-  },
-  {
-    key: "category" as SettingKey,
-    title: "Category Settings",
-    description:
-      "Enable or disable categories, manage category name, slug, and search terms.",
-    icon: <Tags size={22} className="text-yellow-400" />,
-  },
-  {
-    key: "security" as SettingKey,
-    title: "Security Settings",
-    description:
-      "Change password, manage token expiry, logout from all devices, and two-factor authentication.",
-    icon: <Shield size={22} className="text-red-400" />,
-  },
-  {
-    key: "notification" as SettingKey,
-    title: "Notification Settings",
-    description:
-      "Email alerts for new users, scraper failures, and low product count.",
-    icon: <Bell size={22} className="text-orange-400" />,
-  },
-  {
-    key: "api" as SettingKey,
-    title: "API / Integration Settings",
-    description:
-      "Manage Daraz scraper status, Apify API key, OpenAI API key, and image search API key.",
-    icon: <KeyRound size={22} className="text-indigo-400" />,
   },
 ];
 
@@ -333,7 +272,7 @@ export default function AdminSettings() {
           </div>
 
           <div>
-            <h3 className="text-xl font-bold">Website Settings</h3>
+            <h3 className="text-xl font-bold">Admin / Website Settings</h3>
             <p className="text-sm text-white/50">
               Update website name, tagline, logo, favicon, and contact email
             </p>
@@ -456,7 +395,7 @@ export default function AdminSettings() {
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
           >
             <Save size={18} />
-            {loading ? "Saving..." : "Save Website Settings"}
+            {loading ? "Saving..." : "Save Settings"}
           </button>
 
           <button
@@ -608,57 +547,21 @@ export default function AdminSettings() {
     );
   };
 
-  const renderComingSoon = () => {
-    const selected = settings.find((item) => item.key === activeSetting);
-
-    return (
-      <div className="max-w-3xl rounded-2xl bg-[#0B1024] border border-white/10 p-6">
-        <button
-          onClick={() => {
-            setActiveSetting(null);
-            setSaved("");
-          }}
-          className="mb-6 inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"
-        >
-          <ArrowLeft size={18} />
-          Back to Settings
-        </button>
-
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10">
-          {selected?.icon}
-        </div>
-
-        <h3 className="text-xl font-bold">{selected?.title}</h3>
-        <p className="mt-2 text-white/50">{selected?.description}</p>
-
-        <div className="mt-6 rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-4 text-sm text-yellow-300">
-          This settings section will be connected later.
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-[#050815] text-white flex">
       <AdminSidebar />
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 w-full p-4 pt-24 md:p-8 md:pt-8 overflow-x-hidden">
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Settings</h2>
           <p className="text-white/50">
-            Manage website, profile, scraper, products, security, and
-            integrations
+            Manage admin website settings and profile settings
           </p>
         </div>
 
         {activeSetting === "website" && renderWebsiteSettings()}
 
         {activeSetting === "profile" && renderProfileSettings()}
-
-        {activeSetting &&
-          activeSetting !== "website" &&
-          activeSetting !== "profile" &&
-          renderComingSoon()}
 
         {!activeSetting && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
