@@ -179,7 +179,7 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur md:grid-cols-3">
+        {/* <div className="mt-10 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur md:grid-cols-3">
           <div>
             <p className="text-2xl font-bold text-white">Real Products</p>
             <p className="mt-1 text-sm text-white/55">
@@ -200,7 +200,7 @@ export default function HowItWorks() {
               Users can visit the original store page to purchase directly.
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-12 h-px w-full bg-white/10" />
       </div>
