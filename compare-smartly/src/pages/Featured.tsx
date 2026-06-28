@@ -1,121 +1,87 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { HiStar } from "react-icons/hi";
 import { FiExternalLink } from "react-icons/fi";
+import { API_BASE_URL } from "../config/api";
 
-type MarketplacePrice = {
-  store: "Amazon" | "AliExpress" | "eBay" | "Daraz";
-  price: number;
-  url?: string; // add store product url here
-};
-
-type FeaturedProduct = {
-  name: string;
-  rating: number; // 0-5
+type Product = {
+  id: number;
+  title: string;
+  price: string;
+  link: string;
+  reviews: number;
+  category: string;
   image: string;
-  prices: MarketplacePrice[];
+  source?: string;
+  discount?: string;
+  review_text?: string;
+  search_query?: string;
+  scraped_at?: string;
 };
 
-const products: FeaturedProduct[] = [
-  {
-    name: "iPhone 15 Pro",
-    rating: 4.8,
-    image:
-      "https://www.imagineonline.store/cdn/shop/files/iPhone_15_Pro_Max_Blue_Titanium_PDP_Image_Position-1__en-IN.jpg?v=1759734013&width=1445",
-    prices: [
-      { store: "Amazon", price: 999.0, url: "https://www.amazon.com" },
-      { store: "AliExpress", price: 835.75, url: "https://www.aliexpress.com" },
-      { store: "eBay", price: 956.99, url: "https://www.ebay.com" },
-    ],
-  },
-  {
-    name: "AirPods Pro",
-    rating: 4.7,
-    image: "https://appleman.pk/cdn/shop/products/Airpods-Pro-1.jpg?v=1667316352",
-    prices: [
-      { store: "Daraz", price: 179.99, url: "https://www.daraz.pk" },
-      { store: "Amazon", price: 134.99, url: "https://www.amazon.com" },
-      { store: "eBay", price: 165.95, url: "https://www.ebay.com" },
-    ],
-  },
-  {
-    name: "Gaming Laptop",
-    rating: 4.6,
-    image:
-      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=80",
-    prices: [
-      { store: "eBay", price: 999.0, url: "https://www.ebay.com" },
-      { store: "Amazon", price: 1015.99, url: "https://www.amazon.com" },
-      { store: "AliExpress", price: 1034.5, url: "https://www.aliexpress.com" },
-    ],
-  },
-  {
-    name: "4K Action Camera",
-    rating: 4.5,
-    image: "https://cdn.mos.cms.futurecdn.net/GXHa4PWwDPx7tGQG9MDQvK.jpg",
-    prices: [
-      { store: "eBay", price: 999.0, url: "https://www.ebay.com" },
-      { store: "Amazon", price: 1015.99, url: "https://www.amazon.com" },
-      { store: "AliExpress", price: 789.5, url: "https://www.aliexpress.com" },
-    ],
-  },
-];
+const API_URL = `${API_BASE_URL}/api/products`;
 
-function formatMoney(v: number) {
-  return `$${v.toFixed(2)}`;
+function getReviewCount(reviews: number): number {
+  const value = Number(reviews || 0);
+  return Number.isFinite(value) ? value : 0;
 }
 
-function Stars({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  const hasHalf = rating - full >= 0.5;
-  const total = 5;
+function getReviewLabel(reviews: number): string {
+  const count = getReviewCount(reviews);
 
+  if (count === 0) {
+    return "No reviews";
+  }
+
+  return count === 1 ? "1 review" : `${count} reviews`;
+}
+
+function Stars() {
   return (
     <div className="flex items-center gap-1">
-      {Array.from({ length: total }).map((_, i) => {
-        const filled = i < full;
-        const half = i === full && hasHalf;
-
-        return (
-          <span key={i} className="relative inline-flex h-4 w-4">
-            <HiStar
-              className={`h-4 w-4 ${filled ? "text-yellow-400" : "text-white/20"}`}
-            />
-            {half && (
-              <span className="absolute inset-0 overflow-hidden" style={{ width: "50%" }}>
-                <HiStar className="h-4 w-4 text-yellow-400" />
-              </span>
-            )}
-          </span>
-        );
-      })}
-      <span className="ml-2 text-xs text-white/55">{rating.toFixed(1)}</span>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <HiStar key={index} className="h-4 w-4 text-yellow-400" />
+      ))}
     </div>
   );
 }
 
-function storeColor(store: MarketplacePrice["store"]) {
-  switch (store) {
-    case "Amazon":
-      return "text-orange-300";
-    case "AliExpress":
-      return "text-red-300";
-    case "eBay":
-      return "text-pink-300";
-    case "Daraz":
-      return "text-cyan-300";
-    default:
-      return "text-white/70";
-  }
-}
-
-function sortedPrices(prices: MarketplacePrice[]) {
-  return [...prices].sort((a, b) => a.price - b.price);
-}
-
 export default function Featured() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await fetch(`${API_URL}/featured`);
+        const data = await res.json();
+
+        if (res.ok && Array.isArray(data)) {
+          setProducts(data);
+        } else {
+          setProducts([]);
+          setError(data.error || "Featured products load nahi ho sake.");
+        }
+      } catch (error) {
+        console.error("Featured products error:", error);
+        setProducts([]);
+        setError("Featured products load nahi ho sake.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadFeaturedProducts();
+  }, []);
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#070A1A] via-[#060818] to-[#050815]" />
+
       <div className="pointer-events-none absolute inset-0 z-10 opacity-70">
         <div className="absolute left-1/2 top-[-220px] h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-3xl" />
         <div className="absolute left-[15%] top-[140px] h-[300px] w-[300px] rounded-full bg-blue-500/10 blur-3xl" />
@@ -123,107 +89,116 @@ export default function Featured() {
       </div>
 
       <div className="relative z-20 mx-auto max-w-7xl px-4 py-16 text-center">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">Featured</h2>
+        <h2 className="mb-4 text-3xl font-extrabold text-white md:text-4xl">
+          Featured Products
+        </h2>
 
-        <p className="text-center text-sm text-white/55">
-          Compare prices across marketplaces. You’ll be redirected to the store to purchase.
+        <p className="text-sm text-white/55">
+          Explore popular products and compare prices instantly.
         </p>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((p) => {
-            const prices = sortedPrices(p.prices);
-            const cheapest = prices[0];
+        {loading && (
+          <p className="mt-10 text-white/60">Featured products loading...</p>
+        )}
 
-            return (
+        {!loading && error && (
+          <div className="mt-10 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-300">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8">
+            <p className="text-white/60">No featured products found.</p>
+          </div>
+        )}
+
+        {!loading && !error && products.length > 0 && (
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((product) => (
               <div
-                key={p.name}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 shadow-lg"
+                key={product.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-lg backdrop-blur transition hover:border-blue-400/30 hover:bg-white/10"
               >
-                <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#070A1A]/40 aspect-[4/3]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-[#070A1A]/40 p-3">
                   <img
-                    src={p.image}
-                    alt={p.name}
-                    className="h-full w-full object-cover"
+                    src={
+                      product.image
+                        ? `${API_URL}/image?url=${encodeURIComponent(
+                            product.image,
+                          )}`
+                        : "https://via.placeholder.com/300x200?text=No+Image"
+                    }
+                    alt={product.title}
+                    className="h-full w-full object-contain transition duration-300 hover:scale-105"
                     loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.src =
+                        "https://via.placeholder.com/300x200?text=No+Image";
+                    }}
                   />
                 </div>
 
                 <div className="mt-4">
-                  <h3 className="text-base font-semibold text-white">{p.name}</h3>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <Stars rating={p.rating} />
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-blue-400">
+                      {product.category}
+                    </p>
+
+                    <p className="text-xs text-white/45">
+                      {product.source || "Online Store"}
+                    </p>
+                  </div>
+
+                  <h3 className="line-clamp-2 min-h-[48px] text-base font-semibold text-white">
+                    {product.title}
+                  </h3>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-lg font-bold text-white">
+                      {product.price}
+                    </span>
+
                     <div className="text-right">
-                      <div className="text-[10px] text-white/50">Lowest price</div>
-                      <div className="text-sm font-semibold text-white">
-                        {formatMoney(cheapest.price)}
-                      </div>
+                      <Stars />
+                      <p className="mt-1 text-xs text-white/50">
+                        {getReviewLabel(product.reviews)}
+                      </p>
                     </div>
                   </div>
+
+                  {product.discount && (
+                    <p className="mt-2 text-sm text-emerald-400">
+                      Previous price: {product.discount}
+                    </p>
+                  )}
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  {prices.map((x, idx) => {
-                    const isCheapest = idx === 0;
+                <div className="mt-4 grid grid-cols-1 gap-2">
+                  <Link
+                    to={`/compare?q=${encodeURIComponent(product.title)}`}
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:from-blue-400 hover:to-indigo-500"
+                  >
+                    View Comparison →
+                  </Link>
 
-                    return (
-                      <div
-                        key={x.store}
-                        className={[
-                          "flex items-center justify-between rounded-lg border px-3 py-2",
-                          isCheapest
-                            ? "border-emerald-400/30 bg-emerald-500/10"
-                            : "border-white/10 bg-[#070A1A]/30",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold ${storeColor(x.store)}`}>
-                            {x.store}
-                          </span>
-                          {isCheapest && (
-                            <span className="text-[10px] rounded-full bg-emerald-500/15 px-2 py-[2px] text-emerald-200 border border-emerald-400/20">
-                              Cheapest
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-white/80">{formatMoney(x.price)}</span>
-
-                          {/* external redirect */}
-                          {x.url ? (
-                            <a
-                              href={x.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-white/80 hover:bg-white/10 transition"
-                              title="Open store in new tab"
-                            >
-                              Visit <FiExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <a
+                    href={product.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+                  >
+                    Visit Store <FiExternalLink className="h-3 w-3" />
+                  </a>
                 </div>
 
-                {/* comparison page */}
-                <Link
-                  to="/compare"
-                  state={{ product: p }}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-2 text-xs font-semibold text-white
-                           bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 transition"
-                >
-                  View Comparison →
-                </Link>
-
-                <p className="mt-3 text-[10px] text-white/45">
+                <p className="mt-3 text-center text-[10px] text-white/45">
                   Prices can change on the seller’s website.
                 </p>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

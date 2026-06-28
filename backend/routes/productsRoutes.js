@@ -587,6 +587,44 @@ router.post("/image-search", async (req, res) => {
   }
 });
 
+
+/* FEATURED PRODUCTS */
+
+
+
+router.get("/featured", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          title,
+          price,
+          link,
+          category,
+          reviews,
+          image,
+          source,
+          discount,
+          review_text,
+          search_query,
+          scraped_at
+        FROM products
+        ORDER BY COALESCE(reviews, 0) DESC, scraped_at DESC NULLS LAST
+        LIMIT 8
+      `
+    );
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Featured products error:", error);
+
+    return res.status(500).json({
+      error: "Server error",
+    });
+  }
+});
+
 /* CATEGORY PRODUCTS - ALWAYS LAST */
 
 router.get("/:category", async (req, res) => {
