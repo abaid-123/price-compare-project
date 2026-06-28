@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { HiStar } from "react-icons/hi";
-import { FiExternalLink } from "react-icons/fi";
+import { FiExternalLink, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { API_BASE_URL } from "../config/api";
 
 type Product = {
@@ -46,8 +46,87 @@ function Stars() {
   );
 }
 
+function ProductCard({ product }: { product: Product }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-lg backdrop-blur transition hover:border-blue-400/30 hover:bg-white/10">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-[#070A1A]/40 p-3">
+        <img
+          src={
+            product.image
+              ? `${API_URL}/image?url=${encodeURIComponent(product.image)}`
+              : "https://via.placeholder.com/300x200?text=No+Image"
+          }
+          alt={product.title}
+          className="h-full w-full object-contain transition duration-300 hover:scale-105"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.src =
+              "https://via.placeholder.com/300x200?text=No+Image";
+          }}
+        />
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-blue-400">
+            {product.category}
+          </p>
+
+          <p className="text-xs text-white/45">
+            {product.source || "Online Store"}
+          </p>
+        </div>
+
+        <h3 className="line-clamp-2 min-h-[48px] text-base font-semibold text-white">
+          {product.title}
+        </h3>
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-lg font-bold text-white">{product.price}</span>
+
+          <div className="text-right">
+            <Stars />
+            <p className="mt-1 text-xs text-white/50">
+              {getReviewLabel(product.reviews)}
+            </p>
+          </div>
+        </div>
+
+        {product.discount && (
+          <p className="mt-2 text-sm text-emerald-400">
+            Previous price: {product.discount}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2">
+        <Link
+          to={`/compare?q=${encodeURIComponent(product.title)}`}
+          className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:from-blue-400 hover:to-indigo-500"
+        >
+          View Comparison →
+        </Link>
+
+        <a
+          href={product.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+        >
+          Visit Store <FiExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+
+      <p className="mt-3 text-center text-[10px] text-white/45">
+        Prices can change on the seller’s website.
+      </p>
+    </div>
+  );
+}
+
 export default function Featured() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -62,6 +141,7 @@ export default function Featured() {
 
         if (res.ok && Array.isArray(data)) {
           setProducts(data);
+          setActiveIndex(0);
         } else {
           setProducts([]);
           setError(data.error || "Featured products load nahi ho sake.");
@@ -77,6 +157,18 @@ export default function Featured() {
 
     void loadFeaturedProducts();
   }, []);
+
+  const nextProduct = () => {
+    setActiveIndex((prev) => (prev + 1) % products.length);
+  };
+
+  const prevProduct = () => {
+    setActiveIndex((prev) =>
+      prev === 0 ? products.length - 1 : prev - 1,
+    );
+  };
+
+  const activeProduct = products[activeIndex];
 
   return (
     <section className="relative overflow-hidden">
@@ -114,90 +206,58 @@ export default function Featured() {
         )}
 
         {!loading && !error && products.length > 0 && (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-lg backdrop-blur transition hover:border-blue-400/30 hover:bg-white/10"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-[#070A1A]/40 p-3">
-                  <img
-                    src={
-                      product.image
-                        ? `${API_URL}/image?url=${encodeURIComponent(
-                            product.image,
-                          )}`
-                        : "https://via.placeholder.com/300x200?text=No+Image"
-                    }
-                    alt={product.title}
-                    className="h-full w-full object-contain transition duration-300 hover:scale-105"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.src =
-                        "https://via.placeholder.com/300x200?text=No+Image";
-                    }}
-                  />
-                </div>
+          <>
+            {/* Mobile Slider */}
+            <div className="mt-10 sm:hidden">
+              {activeProduct && <ProductCard product={activeProduct} />}
 
-                <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-blue-400">
-                      {product.category}
-                    </p>
+              {products.length > 1 && (
+                <div className="mt-5 flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={prevProduct}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    <FiChevronLeft size={20} />
+                  </button>
 
-                    <p className="text-xs text-white/45">
-                      {product.source || "Online Store"}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {products.map((product, index) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => setActiveIndex(index)}
+                        className={`h-2.5 rounded-full transition-all ${
+                          activeIndex === index
+                            ? "w-7 bg-blue-400"
+                            : "w-2.5 bg-white/25"
+                        }`}
+                      />
+                    ))}
                   </div>
 
-                  <h3 className="line-clamp-2 min-h-[48px] text-base font-semibold text-white">
-                    {product.title}
-                  </h3>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="text-lg font-bold text-white">
-                      {product.price}
-                    </span>
-
-                    <div className="text-right">
-                      <Stars />
-                      <p className="mt-1 text-xs text-white/50">
-                        {getReviewLabel(product.reviews)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {product.discount && (
-                    <p className="mt-2 text-sm text-emerald-400">
-                      Previous price: {product.discount}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 gap-2">
-                  <Link
-                    to={`/compare?q=${encodeURIComponent(product.title)}`}
-                    className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:from-blue-400 hover:to-indigo-500"
+                  <button
+                    type="button"
+                    onClick={nextProduct}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
                   >
-                    View Comparison →
-                  </Link>
-
-                  <a
-                    href={product.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/80 transition hover:bg-white/10"
-                  >
-                    Visit Store <FiExternalLink className="h-3 w-3" />
-                  </a>
+                    <FiChevronRight size={20} />
+                  </button>
                 </div>
+              )}
 
-                <p className="mt-3 text-center text-[10px] text-white/45">
-                  Prices can change on the seller’s website.
-                </p>
-              </div>
-            ))}
-          </div>
+              <p className="mt-3 text-xs text-white/45">
+                {activeIndex + 1} of {products.length}
+              </p>
+            </div>
+
+            {/* Tablet/Desktop Grid */}
+            <div className="mt-10 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>
