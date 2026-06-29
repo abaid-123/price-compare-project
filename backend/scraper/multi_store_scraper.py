@@ -24,12 +24,12 @@ DEFAULT_CATEGORIES = {
     #     "headphones",
     #     "bluetooth speaker",
     # ],
-    # "Fashion": [
-    #     "men shirt",
-    #     "women dress",
-    #     "shoes",
-    #     "handbag",
-    # ],
+    "Fashion": [
+        "men shirt",
+        "women dress",
+        "shoes",
+        "handbag",
+    ],
     # "Sports": [
     #     "cricket bat",
     #     "football",
@@ -61,20 +61,28 @@ DEFAULT_CATEGORIES = {
     #     "baby stroller",
     #     "kids clothing",
     # ],
-    "Home & Living": [
-        "sofa",
-        "dining table",
-        "bed",
-        "home decor",
-    ],
+    # "Home & Living": [
+    #     "sofa",
+    #     "dining table",
+    #     "bed",
+    #     "home decor",
+    # ],
 }
-DB_CONFIG = {
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": os.getenv("DB_PORT", "5432"),
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    DB_CONFIG = {
+        "dsn": DATABASE_URL,
+        "sslmode": "require",
+    }
+else:
+    DB_CONFIG = {
+        "dbname": os.getenv("DB_NAME"),
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": os.getenv("DB_PORT", "5432"),
+    }
 
 HEADLESS = os.getenv("SCRAPER_HEADLESS", "true").lower() not in {"0", "false", "no"}
 GROQ_MODEL = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
@@ -470,12 +478,16 @@ def build_product_terms(product: dict[str, Any], query: str, category: str) -> s
 
 class ProductDatabase:
     def __init__(self) -> None:
-        missing = [name for name, value in DB_CONFIG.items() if value in (None, "")]
-        if missing:
-            raise RuntimeError(
-                "Missing database environment variables: " + ", ".join(missing)
-            )
-        self.conn = psycopg2.connect(**DB_CONFIG)
+        if DATABASE_URL:
+            self.conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+        else:
+            missing = [name for name, value in DB_CONFIG.items() if value in (None, "")]
+            if missing:
+                raise RuntimeError(
+                    "Missing database environment variables: " + ", ".join(missing)
+                )
+            self.conn = psycopg2.connect(**DB_CONFIG)
+
         self.conn.autocommit = False
 
     def ensure_schema(self) -> None:
