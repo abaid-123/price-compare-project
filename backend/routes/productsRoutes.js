@@ -38,19 +38,267 @@ function normalizeText(value) {
     .trim();
 }
 
-function buildSearchWords(query) {
-  const words = normalizeText(query).split(/\s+/).filter(Boolean);
-  const expandedWords = [];
+function buildSearchWordGroups(query) {
+  const stopWords = new Set([
+    "for",
+    "and",
+    "or",
+    "with",
+    "the",
+    "a",
+    "an",
+    "in",
+    "on",
+    "of",
+    "to",
+    "best",
+    "new",
+    "latest",
+  ]);
 
-  for (const word of words) {
-    expandedWords.push(word);
+  const words = normalizeText(query)
+    .split(/\s+/)
+    .filter((word) => word && !stopWords.has(word));
+
+  const synonymMap = {
+    mobile: [
+      "mobile",
+      "phone",
+      "smartphone",
+      "iphone",
+      "samsung",
+      "vivo",
+      "oppo",
+      "infinix",
+      "tecno",
+      "redmi",
+      "realme",
+      "xiaomi",
+      "nokia",
+      "itel",
+    ],
+    phone: [
+      "phone",
+      "mobile",
+      "smartphone",
+      "iphone",
+      "samsung",
+      "vivo",
+      "oppo",
+      "infinix",
+      "tecno",
+      "redmi",
+      "realme",
+      "xiaomi",
+      "nokia",
+      "itel",
+    ],
+    smartphone: [
+      "smartphone",
+      "mobile",
+      "phone",
+      "iphone",
+      "samsung",
+      "vivo",
+      "oppo",
+      "infinix",
+      "tecno",
+      "redmi",
+      "realme",
+      "xiaomi",
+    ],
+
+    book: ["book", "books", "copybook", "reading"],
+    books: ["books", "book", "copybook", "reading"],
+    copybook: ["copybook", "book", "books"],
+
+    child: ["child", "children", "kid", "kids"],
+    children: ["children", "child", "kid", "kids"],
+    kid: ["kid", "kids", "child", "children"],
+    kids: ["kids", "kid", "child", "children"],
+
+    toy: ["toy", "toys"],
+    toys: ["toys", "toy"],
+
+    laptop: ["laptop", "laptops", "notebook"],
+    laptops: ["laptops", "laptop", "notebook"],
+  };
+
+  return words.map((word) => {
+    const group = synonymMap[word] ? [...synonymMap[word]] : [word];
 
     if (word.endsWith("s") && word.length > 3) {
-      expandedWords.push(word.slice(0, -1));
+      group.push(word.slice(0, -1));
     }
+
+    return [...new Set(group)];
+  });
+}
+function inferQueryProductType(query) {
+  const text = normalizeText(query);
+
+  if (
+    /\b(mobile phone|mobile|phone|smartphone|iphone|samsung|vivo|oppo|infinix|tecno|redmi|realme|xiaomi|nokia|itel)\b/.test(
+      text,
+    )
+  ) {
+    return "mobile_phone";
   }
 
-  return [...new Set(expandedWords)];
+  if (
+    /\b(headphone|headphones|headset|earbud|earbuds|earphone|earphones|airpods|earpods|tws|speaker)\b/.test(
+      text,
+    )
+  ) {
+    return "audio";
+  }
+
+  if (/\b(smart watch|smartwatch|watch)\b/.test(text)) {
+    return "smartwatch";
+  }
+
+  if (/\b(book|books|copybook|reading|novel)\b/.test(text)) {
+    return "book";
+  }
+
+  if (/\b(toy|toys|kids toy|children toy|diecast|model car)\b/.test(text)) {
+    return "toy";
+  }
+
+  if (/\b(handbag|hand bag|bag|purse|crossbody|tote|wallet)\b/.test(text)) {
+    return "handbag";
+  }
+
+  if (/\b(laptop|laptops|notebook|macbook)\b/.test(text)) {
+    return "laptop";
+  }
+
+  if (/\b(charger|cable|holder|cover|case|protector|stand)\b/.test(text)) {
+    return "accessory";
+  }
+
+  return "";
+}
+
+async function searchProductsInDatabase(query, category = null) {
+  const cleanQuery = normalizeText(query);
+  const queryProductType = inferQueryProductType(query);
+
+  if (!cleanQuery) {
+    return [];
+  }
+
+  const words = cleanQuery
+    .split(/\s+/)
+    .filter(
+      (word) =>
+        word &&
+        ![
+          "for",
+          "and",
+          "or",
+          "with",
+          "the",
+          "a",
+          "an",
+          "in",
+          "on",
+          "of",
+          "to",
+          "best",
+          "new",
+          "latest",
+        ].includes(word),
+    );
+
+  if (words.length === 0) {
+    return [];
+  }
+
+  const values = [];
+  const wordConditions = [];
+
+  for (const word of words) {
+    values.push(`%${word}%`);
+    const parameter = `$${values.length}`;
+
+    wordConditions.push(`
+      (
+        LOWER(title) LIKE ${parameter}
+        OR LOWER(COALESCE(product_terms, '')) LIKE ${parameter}
+        OR LOWER(COALESCE(category, '')) LIKE ${parameter}
+      )
+    `);
+  }
+
+  let categoryCondition = "";
+
+  if (category) {
+    values.push(category);
+    categoryCondition = `AND category = $${values.length}`;
+  }
+
+  let productTypeCondition = "";
+
+  if (queryProductType) {
+    values.push(queryProductType);
+    productTypeCondition = `AND product_type = $${values.length}`;
+  }
+
+  values.push(`%${cleanQuery}%`);
+  const phraseParameter = `$${values.length}`;
+
+  const result = await pool.query(
+    `
+      SELECT
+        id,
+        title,
+        price,
+        link,
+        category,
+        reviews,
+        image,
+        source,
+        discount,
+        review_text,
+        search_query,
+        product_type,
+        product_terms,
+        scraped_at,
+
+        (
+          CASE
+            WHEN LOWER(title) LIKE ${phraseParameter} THEN 100
+            ELSE 0
+          END
+          +
+          CASE
+            WHEN LOWER(COALESCE(product_terms, '')) LIKE ${phraseParameter} THEN 40
+            ELSE 0
+          END
+          +
+          CASE
+            WHEN LOWER(COALESCE(category, '')) LIKE ${phraseParameter} THEN 20
+            ELSE 0
+          END
+        ) AS relevance_score
+
+      FROM products
+      WHERE ${wordConditions.join(" AND ")}
+      ${categoryCondition}
+      ${productTypeCondition}
+
+      ORDER BY
+        relevance_score DESC,
+        reviews DESC,
+        scraped_at DESC NULLS LAST
+
+      LIMIT 100
+    `,
+    values,
+  );
+
+  return result.rows;
 }
 
 function resolveCategory(value) {
@@ -67,7 +315,7 @@ function resolveCategory(value) {
   }
 
   const exactCategory = Object.values(CATEGORY_SLUG_MAP).find(
-    (category) => category.toLowerCase() === normalized
+    (category) => category.toLowerCase() === normalized,
   );
 
   return exactCategory || null;
@@ -99,71 +347,6 @@ function rankProducts(products) {
   });
 }
 
-async function searchProductsInDatabase(query, category = null) {
-  const words = buildSearchWords(query);
-
-  if (words.length === 0) {
-    return [];
-  }
-
-  const values = words.map((word) => `%${word}%`);
-
-  const conditions = words.map((_, index) => {
-    const parameter = `$${index + 1}`;
-
-    return `
-      (
-        LOWER(title) LIKE ${parameter}
-        OR LOWER(COALESCE(search_query, '')) LIKE ${parameter}
-        OR LOWER(COALESCE(source, '')) LIKE ${parameter}
-      )
-    `;
-  });
-
-  let categoryCondition = "";
-
-  if (category) {
-    values.push(category);
-    categoryCondition = `AND category = $${values.length}`;
-  }
-
-  values.push(`%${normalizeText(query)}%`);
-  const phraseParameter = `$${values.length}`;
-
-  const result = await pool.query(
-    `
-      SELECT
-        id,
-        title,
-        price,
-        link,
-        category,
-        reviews,
-        image,
-        source,
-        discount,
-        review_text,
-        search_query,
-        scraped_at
-      FROM products
-      WHERE (${conditions.join(" OR ")})
-      ${categoryCondition}
-      ORDER BY
-        CASE
-          WHEN LOWER(title) LIKE ${phraseParameter} THEN 0
-          WHEN LOWER(COALESCE(search_query, '')) LIKE ${phraseParameter} THEN 1
-          ELSE 2
-        END,
-        reviews DESC,
-        scraped_at DESC NULLS LAST
-      LIMIT 100
-    `,
-    values
-  );
-
-  return result.rows;
-}
-
 async function findLatestAnalysis(query, category = null) {
   const values = [query];
   let categoryCondition = "";
@@ -187,7 +370,7 @@ async function findLatestAnalysis(query, category = null) {
       ORDER BY created_at DESC
       LIMIT 1
     `,
-    values
+    values,
   );
 
   return result.rows[0] || null;
@@ -284,6 +467,39 @@ function findAnalysisProduct(products, parsedAnalysis) {
   );
 }
 
+async function findAnalysisProductFromDatabase(parsedAnalysis) {
+  if (!parsedAnalysis?.link) {
+    return null;
+  }
+
+  const result = await pool.query(
+    `
+      SELECT
+        id,
+        title,
+        price,
+        link,
+        category,
+        reviews,
+        image,
+        source,
+        discount,
+        review_text,
+        search_query,
+        product_type,
+        product_terms,
+        scraped_at
+      FROM products
+      WHERE link = $1
+      LIMIT 1
+    `,
+    [parsedAnalysis.link]
+  );
+
+  return result.rows[0] || null;
+}
+
+
 function buildSearchResults(products, analysisRow) {
   const rankedProducts = rankProducts(products);
   const parsedAnalysis = parseGroqAnalysis(analysisRow?.analysis || "");
@@ -364,10 +580,22 @@ function buildSearchResults(products, analysisRow) {
 }
 
 async function createSearchResult(query, category = null) {
-  const products = await searchProductsInDatabase(query, category);
+  let products = await searchProductsInDatabase(query, category);
   const analysisRow = await findLatestAnalysis(query, category);
-  const recommendation = buildSearchResults(products, analysisRow);
 
+  if (analysisRow) {
+    const parsedAnalysis = parseGroqAnalysis(analysisRow.analysis || "");
+    const dbAnalysisProduct = await findAnalysisProductFromDatabase(parsedAnalysis);
+
+    if (
+      dbAnalysisProduct &&
+      !products.some((product) => product.id === dbAnalysisProduct.id)
+    ) {
+      products = [dbAnalysisProduct, ...products];
+    }
+  }
+
+  const recommendation = buildSearchResults(products, analysisRow);
   const recommendedProduct = recommendation.recommendedProduct;
 
   return {
@@ -409,10 +637,7 @@ router.get("/image", async (req, res) => {
 
     const parsedUrl = new URL(imageUrl);
 
-    if (
-      parsedUrl.protocol !== "http:" &&
-      parsedUrl.protocol !== "https:"
-    ) {
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
       return res.status(400).send("Invalid image URL");
     }
 
@@ -426,7 +651,7 @@ router.get("/image", async (req, res) => {
 
     res.set(
       "Content-Type",
-      response.headers.get("content-type") || "image/jpeg"
+      response.headers.get("content-type") || "image/jpeg",
     );
 
     return res.send(Buffer.from(buffer));
@@ -545,9 +770,7 @@ router.post("/image-search", async (req, res) => {
             {
               type: "image_url",
               image_url: {
-                url:
-                  `data:${mimeType || "image/jpeg"};base64,` +
-                  imageBase64,
+                url: `data:${mimeType || "image/jpeg"};base64,` + imageBase64,
               },
             },
             {
@@ -587,10 +810,7 @@ router.post("/image-search", async (req, res) => {
   }
 });
 
-
 /* FEATURED PRODUCTS */
-
-
 
 router.get("/featured", async (req, res) => {
   try {
@@ -612,7 +832,7 @@ router.get("/featured", async (req, res) => {
         FROM products
         ORDER BY COALESCE(reviews, 0) DESC, scraped_at DESC NULLS LAST
         LIMIT 8
-      `
+      `,
     );
 
     return res.json(result.rows);
@@ -654,7 +874,7 @@ router.get("/:category", async (req, res) => {
         WHERE category = $1
         ORDER BY reviews DESC, scraped_at DESC NULLS LAST
       `,
-      [dbCategory]
+      [dbCategory],
     );
 
     return res.json(result.rows);

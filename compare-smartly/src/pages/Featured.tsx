@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+
 import { HiStar } from "react-icons/hi";
 import { FiExternalLink, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { API_BASE_URL } from "../config/api";
@@ -99,19 +99,12 @@ function ProductCard({ product }: { product: Product }) {
         )}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-2">
-        <Link
-          to={`/compare?q=${encodeURIComponent(product.title)}`}
-          className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:from-blue-400 hover:to-indigo-500"
-        >
-          View Comparison →
-        </Link>
-
+      <div className="mt-4">
         <a
           href={product.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:from-blue-400 hover:to-indigo-500"
         >
           Visit Store <FiExternalLink className="h-3 w-3" />
         </a>
@@ -163,9 +156,7 @@ export default function Featured() {
   };
 
   const prevProduct = () => {
-    setActiveIndex((prev) =>
-      prev === 0 ? products.length - 1 : prev - 1,
-    );
+    setActiveIndex((prev) => (prev === 0 ? products.length - 1 : prev - 1));
   };
 
   const activeProduct = products[activeIndex];

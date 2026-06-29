@@ -16,24 +16,58 @@ from playwright.async_api import Browser, Page, async_playwright
 load_dotenv()
 
 DEFAULT_CATEGORIES = {
-    "Electronics": [
-        "laptop",
-        "mobile phone",
-        "airpods",
-        # "smart watch",
-        # "headphones",
-        # "bluetooth speaker",
+    # "Electronics": [
+    #     "laptop",
+    #     "mobile phone",
+    #     "airpods",
+    #     "smart watch",
+    #     "headphones",
+    #     "bluetooth speaker",
+    # ],
+    # "Fashion": [
+    #     "men shirt",
+    #     "women dress",
+    #     "shoes",
+    #     "handbag",
+    # ],
+    # "Sports": [
+    #     "cricket bat",
+    #     "football",
+    #     "tennis racket",
+    # ],
+    # "Beauty": [
+    #     "face wash",
+    #     "perfume",
+    #     "makeup kit",
+    # ],
+    # "Automotive": [
+    #     "car accessories",
+    #     "motorcycle helmet",
+    #     "car phone holder",
+    # ],
+    # "Gaming": [
+    #     "ps5",
+    #     "xbox series x",
+    #     "nintendo switch",
+    # ],
+    # "Books": [
+    #     "novel book",
+    #     "self-help book",
+    #     "children book",
+    #     "programming book",
+    # ],
+    # "Baby & Kids": [
+    #     "kids toys",
+    #     "baby stroller",
+    #     "kids clothing",
+    # ],
+    "Home & Living": [
+        "sofa",
+        "dining table",
+        "bed",
+        "home decor",
     ],
-    # "Fashion": ["men shirt", "women dress", "shoes", "handbag"],
-    # "Sports": ["cricket bat", "football", "tennis racket"],
-    # "Beauty": ["face wash", "perfume", "makeup kit"],
-    # "Automotive": ["car accessories", "motorcycle helmet", "car phone holder"],
-    # "Gaming": ["ps5", "xbox series x", "nintendo switch"],
-    # "Books": ["novel book", "self-help book", "children book", "programming book"],
-    # "Baby & Kids": ["kids toys", "baby stroller", "kids clothing"],
-    # "Home & Living": ["sofa", "dining table", "bed", "home decor"],
 }
-
 DB_CONFIG = {
     "dbname": os.getenv("DB_NAME"),
     "user": os.getenv("DB_USER"),
@@ -95,6 +129,345 @@ def unique_products(products: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return output
 
 
+def has_any(text: str, patterns: list[str]) -> bool:
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
+PRODUCT_TYPE_RULES: list[dict[str, Any]] = [
+    {
+        "type": "handbag",
+        "category": "Fashion",
+        "patterns": [
+            r"\bhand\s*bag\b",
+            r"\bhandbag\b",
+            r"\bbag\b",
+            r"\bpurse\b",
+            r"\bcrossbody\b",
+            r"\btote\b",
+            r"\bshoulder\s*bag\b",
+            r"\bclutch\b",
+            r"\bwallet\b",
+        ],
+    },
+    {
+        "type": "book",
+        "category": "Books",
+        "patterns": [
+            r"\bbook\b",
+            r"\bbooks\b",
+            r"\bcopybook\b",
+            r"\breading\b",
+            r"\bnovel\b",
+            r"\bmagazine\b",
+            r"\bpython\b.*\bbook\b",
+        ],
+    },
+    {
+        "type": "toy",
+        "category": "Baby & Kids",
+        "patterns": [
+            r"\btoy\b",
+            r"\btoys\b",
+            r"\bdiecast\b",
+            r"\bmodel\s*car\b",
+            r"\bcar\s*model\b",
+            r"\bpull\s*back\b",
+            r"\bremote\s*control\b",
+            r"\brc\s*car\b",
+        ],
+    },
+    {
+        "type": "smartwatch",
+        "category": "Electronics",
+        "patterns": [
+            r"\bsmart\s*watch\b",
+            r"\bsmartwatch\b",
+            r"\bwatch\b",
+            r"\bwrist\s*watch\b",
+            r"\btitan\s*pro\b",
+        ],
+    },
+    {
+        "type": "audio",
+        "category": "Electronics",
+        "patterns": [
+            r"\bheadphone\b",
+            r"\bheadphones\b",
+            r"\bheadset\b",
+            r"\bearbud\b",
+            r"\bearbuds\b",
+            r"\bearphone\b",
+            r"\bearphones\b",
+            r"\bairpods\b",
+            r"\bearpods\b",
+            r"\btws\b",
+            r"\bbluetooth\s*speaker\b",
+            r"\bspeaker\b",
+        ],
+    },
+    {
+        "type": "phone_accessory",
+        "category": "Electronics",
+        "patterns": [
+            r"\bphone\s*holder\b",
+            r"\bmobile\s*holder\b",
+            r"\bphone\s*stand\b",
+            r"\bmobile\s*stand\b",
+            r"\bphone\s*case\b",
+            r"\bmobile\s*case\b",
+            r"\bphone\s*cover\b",
+            r"\bmobile\s*cover\b",
+            r"\bcharger\b",
+            r"\bcharging\b",
+            r"\bcable\b",
+            r"\bpower\s*bank\b",
+            r"\bmagnetic\s*holder\b",
+            r"\bheadset\s*stand\b",
+        ],
+    },
+    {
+        "type": "mobile_phone",
+        "category": "Electronics",
+        "patterns": [
+            r"\bmobile\s*phone\b",
+            r"\bsmartphone\b",
+            r"\biphone\b",
+            r"\bsamsung\b",
+            r"\bvivo\b",
+            r"\boppo\b",
+            r"\binfinix\b",
+            r"\btecno\b",
+            r"\bredmi\b",
+            r"\brealme\b",
+            r"\bxiaomi\b",
+            r"\bnokia\b",
+            r"\bitel\b",
+            r"\bpta\s*approved\b",
+            r"\bdual\s*sim\b",
+            r"\b\d+\s*gb\s*ram\b",
+            r"\b\d+\s*gb\s*rom\b",
+            r"\bandroid\s*smartphone\b",
+        ],
+    },
+    {
+        "type": "laptop",
+        "category": "Electronics",
+        "patterns": [
+            r"\blaptop\b",
+            r"\blaptops\b",
+            r"\bnotebook\b",
+            r"\bmacbook\b",
+            r"\bchromebook\b",
+        ],
+    },
+    {
+        "type": "fashion_clothing",
+        "category": "Fashion",
+        "patterns": [
+            r"\bshirt\b",
+            r"\bdress\b",
+            r"\bjeans\b",
+            r"\bshoe\b",
+            r"\bshoes\b",
+            r"\bsneaker\b",
+            r"\bsneakers\b",
+            r"\bclothing\b",
+        ],
+    },
+    {
+        "type": "beauty",
+        "category": "Beauty",
+        "patterns": [
+            r"\bmakeup\b",
+            r"\bface\s*wash\b",
+            r"\bperfume\b",
+            r"\bskincare\b",
+            r"\bskin\s*care\b",
+            r"\blipstick\b",
+            r"\bserum\b",
+        ],
+    },
+    {
+        "type": "sports",
+        "category": "Sports",
+        "patterns": [
+            r"\bcricket\b",
+            r"\bfootball\b",
+            r"\btennis\b",
+            r"\bfitness\b",
+            r"\bgym\b",
+            r"\bracket\b",
+            r"\bracquet\b",
+        ],
+    },
+    {
+        "type": "home_living",
+        "category": "Home & Living",
+        "patterns": [
+            r"\bsofa\b",
+            r"\bbed\b",
+            r"\bdining\b",
+            r"\bfurniture\b",
+            r"\bdecor\b",
+            r"\bhome\s*decor\b",
+        ],
+    },
+]
+
+
+QUERY_TYPE_RULES = {
+    "mobile_phone": [
+        r"\bmobile\s*phone\b",
+        r"\bmobile\b",
+        r"\bphone\b",
+        r"\bsmartphone\b",
+        r"\biphone\b",
+        r"\bsamsung\b",
+        r"\bvivo\b",
+        r"\boppo\b",
+        r"\binfinix\b",
+        r"\btecno\b",
+        r"\bredmi\b",
+        r"\brealme\b",
+        r"\bxiaomi\b",
+        r"\bnokia\b",
+        r"\bitel\b",
+    ],
+    "book": [r"\bbook\b", r"\bbooks\b", r"\bcopybook\b", r"\breading\b"],
+    "toy": [r"\btoy\b", r"\btoys\b", r"\bkids\s*toy\b", r"\bchildren\s*toy\b"],
+    "audio": [
+        r"\bheadphone\b",
+        r"\bheadphones\b",
+        r"\bearbud\b",
+        r"\bearbuds\b",
+        r"\bairpods\b",
+        r"\bspeaker\b",
+    ],
+    "smartwatch": [r"\bsmart\s*watch\b", r"\bsmartwatch\b", r"\bwatch\b"],
+    "laptop": [r"\blaptop\b", r"\blaptops\b", r"\bnotebook\b"],
+    "handbag": [r"\bhandbag\b", r"\bhand\s*bag\b", r"\bbag\b", r"\bpurse\b"],
+}
+
+
+def infer_query_type(query: str) -> str:
+    text = normalize_text_for_matching(query)
+
+    for product_type, patterns in QUERY_TYPE_RULES.items():
+        if has_any(text, patterns):
+            return product_type
+
+    return ""
+
+
+def normalize_text_for_matching(value: Any) -> str:
+    return normalize_text(value)
+
+
+def normalize_text(value: Any) -> str:
+    return clean_text(value).lower()
+
+
+def infer_product_type(title: str, query: str = "", category: str = "") -> str:
+    text = normalize_text_for_matching(f"{title} {category}")
+    query_type = infer_query_type(query)
+
+    # Real laptop first
+    if re.search(
+        r"\b(laptop|notebook|macbook|chromebook|latitude|thinkpad|ideapad|inspiron|pavilion|elitebook|probook|surface\s*laptop|dynabook|portege)\b",
+        text,
+    ) and re.search(
+        r"\b(core\s*i3|core\s*i5|core\s*i7|core\s*i9|ryzen|celeron|pentium|intel|amd|\d+\s*gb\s*ram|\d+\s*gb\s*ssd|\d+\s*gb\s*hdd|ssd|hdd|windows)\b",
+        text,
+    ):
+        return "laptop"
+
+    # Laptop accessories
+    if re.search(
+        r"\b(laptop\s*battery|laptop\s*bag|laptop\s*backpack|backpack|bacpack|laptop\s*ram|so-dimm|sodimm|laptop\s*charger|laptop\s*adapter|laptop\s*sleeve|laptop\s*stand|cooling\s*pad)\b",
+        text,
+    ):
+        return "laptop_accessory"
+
+    # Mobile accessories
+    if re.search(
+        r"\b(phone\s*holder|mobile\s*holder|phone\s*stand|mobile\s*stand|phone\s*case|mobile\s*case|phone\s*cover|mobile\s*cover|charger|charging|cable|power\s*bank|magnetic\s*holder|headset\s*stand)\b",
+        text,
+    ):
+        return "phone_accessory"
+
+    if re.search(
+        r"\b(hand\s*bag|handbag|purse|crossbody|tote|shoulder\s*bag|clutch|wallet)\b",
+        text,
+    ):
+        return "handbag"
+
+    if re.search(r"\b(book|books|copybook|reading|novel|magazine)\b", text):
+        return "book"
+
+    if re.search(
+        r"\b(toy|toys|diecast|model\s*car|car\s*model|pull\s*back|remote\s*control|rc\s*car)\b",
+        text,
+    ):
+        return "toy"
+
+    if re.search(r"\b(smart\s*watch|smartwatch|wrist\s*watch|titan\s*pro)\b", text):
+        return "smartwatch"
+
+    if re.search(
+        r"\b(headphone|headphones|headset|earbud|earbuds|earphone|earphones|airpods|earpods|tws|bluetooth\s*speaker|speaker)\b",
+        text,
+    ):
+        return "audio"
+
+    if re.search(
+        r"\b(mobile\s*phone|smartphone|iphone|samsung|vivo|oppo|infinix|tecno|redmi|realme|xiaomi|nokia|itel|pta\s*approved|dual\s*sim|android\s*smartphone)\b",
+        text,
+    ):
+        return "mobile_phone"
+
+    if re.search(
+        r"\b(shirt|dress|jeans|shoe|shoes|sneaker|sneakers|clothing)\b",
+        text,
+    ):
+        return "fashion_clothing"
+
+    if re.search(
+        r"\b(makeup|face\s*wash|perfume|skincare|skin\s*care|lipstick|serum)\b",
+        text,
+    ):
+        return "beauty"
+
+    if re.search(
+        r"\b(cricket|football|tennis|fitness|gym|racket|racquet)\b",
+        text,
+    ):
+        return "sports"
+
+    if re.search(
+        r"\b(sofa|bed|dining|furniture|decor|home\s*decor)\b",
+        text,
+    ):
+        return "home_living"
+
+    if query_type in {"book", "toy", "handbag", "beauty", "sports", "home_living"}:
+        return query_type
+
+    return "unknown"
+
+def build_product_terms(product: dict[str, Any], query: str, category: str) -> str:
+    values = [
+        product.get("title"),
+        category,
+        product.get("source"),
+        product.get("price"),
+        product.get("discount"),
+        query,
+    ]
+
+    terms = normalize_text_for_matching(" ".join(clean_text(value) for value in values))
+    return terms[:2000]
+
+
 class ProductDatabase:
     def __init__(self) -> None:
         missing = [name for name, value in DB_CONFIG.items() if value in (None, "")]
@@ -128,6 +501,8 @@ class ProductDatabase:
                     ADD COLUMN IF NOT EXISTS discount TEXT NOT NULL DEFAULT '',
                     ADD COLUMN IF NOT EXISTS review_text TEXT NOT NULL DEFAULT '',
                     ADD COLUMN IF NOT EXISTS search_query TEXT NOT NULL DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS product_type TEXT NOT NULL DEFAULT 'unknown',
+                    ADD COLUMN IF NOT EXISTS product_terms TEXT NOT NULL DEFAULT '',
                     ADD COLUMN IF NOT EXISTS scraped_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
                 """
             )
@@ -164,9 +539,53 @@ class ProductDatabase:
 
         self.conn.commit()
 
+    def backfill_product_metadata(self) -> None:
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, title, category, search_query, source, price, discount
+                FROM products
+                """
+            )
+            rows = cursor.fetchall()
+
+            for row in rows:
+                product_id, title, category, search_query, source, price, discount = row
+
+                product = {
+                    "title": title,
+                    "source": source,
+                    "price": price,
+                    "discount": discount,
+                }
+
+                product_type = infer_product_type(
+                    title=clean_text(title),
+                    query=clean_text(search_query),
+                    category=clean_text(category),
+                )
+                product_terms = build_product_terms(
+                    product,
+                    clean_text(search_query),
+                    clean_text(category),
+                )
+
+                cursor.execute(
+                    """
+                    UPDATE products
+                    SET product_type = %s,
+                        product_terms = %s
+                    WHERE id = %s
+                    """,
+                    (product_type, product_terms, product_id),
+                )
+
+        self.conn.commit()
+
     def reset_products(self) -> None:
         with self.conn.cursor() as cursor:
-            cursor.execute("TRUNCATE TABLE products RESTART IDENTITY;")
+            cursor.execute("TRUNCATE TABLE product_analyses RESTART IDENTITY CASCADE;")
+            cursor.execute("TRUNCATE TABLE products RESTART IDENTITY CASCADE;")
         self.conn.commit()
 
     def save_products(
@@ -191,6 +610,20 @@ class ProductDatabase:
                 except (TypeError, ValueError):
                     reviews = 0
 
+                item_for_terms = {
+                    **item,
+                    "title": title,
+                    "price": clean_text(item.get("price")),
+                    "source": clean_text(item.get("source"), "Unknown"),
+                    "discount": clean_text(item.get("discount")),
+                }
+                product_type = infer_product_type(
+                    title=title,
+                    query=search_query,
+                    category=category,
+                )
+                product_terms = build_product_terms(item_for_terms, search_query, category)
+
                 cursor.execute(
                     """
                     INSERT INTO products (
@@ -204,9 +637,11 @@ class ProductDatabase:
                         discount,
                         review_text,
                         search_query,
+                        product_type,
+                        product_terms,
                         scraped_at
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                     ON CONFLICT (link)
                     DO UPDATE SET
                         title = EXCLUDED.title,
@@ -218,19 +653,23 @@ class ProductDatabase:
                         discount = EXCLUDED.discount,
                         review_text = EXCLUDED.review_text,
                         search_query = EXCLUDED.search_query,
+                        product_type = EXCLUDED.product_type,
+                        product_terms = EXCLUDED.product_terms,
                         scraped_at = NOW()
                     """,
                     (
                         title,
-                        clean_text(item.get("price")),
+                        item_for_terms["price"],
                         link,
                         category,
                         reviews,
                         clean_text(item.get("image")),
-                        clean_text(item.get("source"), "Unknown"),
-                        clean_text(item.get("discount")),
+                        item_for_terms["source"],
+                        item_for_terms["discount"],
                         clean_text(item.get("review_text")),
                         search_query,
+                        product_type,
+                        product_terms,
                     ),
                 )
                 saved += 1
@@ -777,6 +1216,11 @@ def analyze_products(
             "discount": item.get("discount"),
             "review_count": item.get("review_count"),
             "review_text": clean_text(item.get("review_text"))[:700],
+            "product_type": infer_product_type(
+                title=clean_text(item.get("title")),
+                query=query,
+                category=category,
+            ),
             "link": item.get("link"),
         }
         for item in ranked
@@ -857,26 +1301,48 @@ async def scrape_one_query(
 ) -> int:
     emit("query_started", query=query, category=category)
 
-    site_results = await asyncio.gather(
-        scrape_techhunk(browser, query, max_pages, max_products),
-        scrape_daraz(browser, query, max_pages, max_products),
-        scrape_shophive(browser, query, max_pages, max_products),
-        return_exceptions=True,
-    )
-
     products: list[dict[str, Any]] = []
-    site_names = ["TechHunk.pk", "Daraz.pk", "ShopHive.com"]
 
-    for source, result in zip(site_names, site_results):
-        if isinstance(result, Exception):
-            emit("site_error", source=source, message=str(result))
-            continue
-        products.extend(result)
+    # Laptop-friendly mode:
+    # Pehle code 3 websites ko ek sath run karta tha. Is se CPU/RAM zyada use hoti thi.
+    # Ab scraper sites ko one-by-one run karega: TechHunk -> Daraz -> ShopHive.
+    site_scrapers = [
+        ("TechHunk.pk", scrape_techhunk),
+        ("Daraz.pk", scrape_daraz),
+        ("ShopHive.com", scrape_shophive),
+    ]
+
+    for source, scraper_func in site_scrapers:
+        try:
+            emit("site_queue_started", source=source, query=query)
+
+            result = await scraper_func(
+                browser,
+                query,
+                max_pages,
+                max_products,
+            )
+
+            products.extend(result)
+
+            emit(
+                "site_queue_completed",
+                source=source,
+                query=query,
+                products=len(result),
+            )
+
+            # Small delay so laptop/browser memory ko thora time mil jaye.
+            await asyncio.sleep(2)
+
+        except Exception as error:
+            emit("site_error", source=source, message=str(error))
 
     products = unique_products(products)
     saved = database.save_products(products, category, query)
 
     analysis = None
+
     if run_analysis and products:
         try:
             analysis = await asyncio.to_thread(
@@ -885,9 +1351,11 @@ async def scrape_one_query(
                 category,
                 products,
             )
+
             if analysis:
                 database.save_analysis(query, category, analysis)
                 emit("analysis_completed", query=query, analysis=analysis)
+
         except Exception as error:
             emit("analysis_error", query=query, message=str(error))
 
@@ -898,6 +1366,7 @@ async def scrape_one_query(
         scraped=len(products),
         saved=saved,
     )
+
     return saved
 
 
@@ -906,14 +1375,14 @@ async def main() -> int:
     parser.add_argument("--query", default="")
     parser.add_argument("--category", default="Search Results")
     parser.add_argument("--max-pages", type=int, default=1)
-    parser.add_argument("--max-products", type=int, default=15)
+    parser.add_argument("--max-products", type=int, default=5)
     parser.add_argument("--all-categories", action="store_true")
     parser.add_argument("--reset", action="store_true")
     parser.add_argument("--skip-analysis", action="store_true")
     args = parser.parse_args()
 
-    args.max_pages = max(1, min(args.max_pages, 5))
-    args.max_products = max(1, min(args.max_products, 100))
+    args.max_pages = max(1, min(args.max_pages, 3))
+    args.max_products = max(1, min(args.max_products, 50))
 
     if not args.all_categories and not args.query.strip():
         parser.error("--query is required unless --all-categories is used")
@@ -924,6 +1393,8 @@ async def main() -> int:
     if args.reset:
         database.reset_products()
         emit("database_reset")
+    else:
+        database.backfill_product_metadata()
 
     total_saved = 0
 
