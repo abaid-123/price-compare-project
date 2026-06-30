@@ -753,7 +753,7 @@ router.post("/image-search", async (req, res) => {
 
     if (!imageBase64) {
       return res.status(400).json({
-        error: "Image nahi mili",
+        error: "No image was provided.",
       });
     }
 

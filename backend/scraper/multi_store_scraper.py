@@ -1316,8 +1316,8 @@ async def scrape_one_query(
     products: list[dict[str, Any]] = []
 
     # Laptop-friendly mode:
-    # Pehle code 3 websites ko ek sath run karta tha. Is se CPU/RAM zyada use hoti thi.
-    # Ab scraper sites ko one-by-one run karega: TechHunk -> Daraz -> ShopHive.
+    # Previously, the code ran all 3 websites together, which used more CPU/RAM.
+    # The scraper now runs the sites one by one: TechHunk -> Daraz -> ShopHive.
     site_scrapers = [
         ("TechHunk.pk", scrape_techhunk),
         ("Daraz.pk", scrape_daraz),
@@ -1344,7 +1344,7 @@ async def scrape_one_query(
                 products=len(result),
             )
 
-            # Small delay so laptop/browser memory ko thora time mil jaye.
+            # Small delay to give the laptop/browser memory some time to recover.
             await asyncio.sleep(2)
 
         except Exception as error:

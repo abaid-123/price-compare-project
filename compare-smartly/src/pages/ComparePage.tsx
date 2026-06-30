@@ -88,16 +88,14 @@ export default function ComparePage() {
         setLoading(true);
 
         const response = await fetch(
-          API_URL +
-            "/search/best?q=" +
-            encodeURIComponent(searchQuery),
+          API_URL + "/search/best?q=" + encodeURIComponent(searchQuery),
           {
             signal: controller.signal,
-          }
+          },
         );
 
         if (!response.ok) {
-          throw new Error("Products load nahi ho sake");
+          throw new Error("Products could not be loaded");
         }
 
         const data: SearchResponse = await response.json();
@@ -110,7 +108,7 @@ export default function ComparePage() {
 
         console.error("Search error:", err);
         setProducts([]);
-        setError("Products load nahi ho sake. Backend check karein.");
+        setError("Products could not be loaded. Please check the backend.");
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -128,22 +126,18 @@ export default function ComparePage() {
   function searchAgain() {
     const query = q.trim();
 
-    navigate(
-      query ? "/compare?q=" + encodeURIComponent(query) : "/compare"
-    );
+    navigate(query ? "/compare?q=" + encodeURIComponent(query) : "/compare");
   }
 
   const filteredProducts = useMemo(() => {
     const recommendedProduct = products.find(isRecommended);
 
-    const otherProducts = products.filter(
-      (product) => !isRecommended(product)
-    );
+    const otherProducts = products.filter((product) => !isRecommended(product));
 
     if (sort === "price") {
       otherProducts.sort(
         (first, second) =>
-          getNumericPrice(first.price) - getNumericPrice(second.price)
+          getNumericPrice(first.price) - getNumericPrice(second.price),
       );
     } else {
       otherProducts.sort((first, second) => {
@@ -230,9 +224,7 @@ export default function ComparePage() {
           </select>
         </div>
 
-        {loading && (
-          <p className="mt-10 text-white/60">Products load ho rahe hain...</p>
-        )}
+        {loading && <p className="mt-10 text-white/60">Loading products...</p>}
 
         {!loading && error && (
           <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-300">
@@ -346,8 +338,8 @@ export default function ComparePage() {
                       </p>
 
                       <p className="mt-1 text-sm leading-6 text-white/75">
-                        Exact Groq analysis available nahi. Yeh product reviews
-                        aur price ranking ke basis par top match hai.
+                        Exact Groq analysis is not available. This product is
+                        the top match based on reviews and price ranking.
                       </p>
                     </div>
                   )}
@@ -366,24 +358,21 @@ export default function ComparePage() {
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          searchQuery &&
-          filteredProducts.length === 0 && (
-            <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-              <p className="text-white/70">
-                No products found for{" "}
-                <span className="text-blue-400">{searchQuery}</span>
-              </p>
+        {!loading && !error && searchQuery && filteredProducts.length === 0 && (
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+            <p className="text-white/70">
+              No products found for{" "}
+              <span className="text-blue-400">{searchQuery}</span>
+            </p>
 
-              <Link
-                to="/categories"
-                className="mt-4 inline-block rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
-              >
-                View Categories
-              </Link>
-            </div>
-          )}
+            <Link
+              to="/categories"
+              className="mt-4 inline-block rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
+            >
+              View Categories
+            </Link>
+          </div>
+        )}
 
         {!loading && !searchQuery && (
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center">

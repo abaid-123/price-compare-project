@@ -93,7 +93,7 @@ export default function CategoryPage() {
         );
 
         if (!response.ok) {
-          throw new Error("Category products load nahi huay");
+          throw new Error("Category products failed to load");
         }
 
         const data: unknown = await response.json();
@@ -106,7 +106,7 @@ export default function CategoryPage() {
 
         console.error("Category products error:", err);
         setProducts([]);
-        setError("Category products load nahi ho sake.");
+        setError("Category products could not be loaded.");
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -138,7 +138,7 @@ export default function CategoryPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Category products load nahi huay");
+        throw new Error("Category products failed to load");
       }
 
       const data: unknown = await response.json();
@@ -147,7 +147,7 @@ export default function CategoryPage() {
     } catch (err) {
       console.error("Category products error:", err);
       setProducts([]);
-      setError("Category products load nahi ho sake.");
+      setError("Category products could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -187,7 +187,7 @@ export default function CategoryPage() {
     } catch (err) {
       console.error("Product search error:", err);
       setProducts([]);
-      setError("Products search nahi ho sake.");
+      setError("Product Could not be searched.");
     } finally {
       setSearching(false);
     }
@@ -334,9 +334,7 @@ export default function CategoryPage() {
 
         {(loading || searching) && (
           <p className="mt-10 text-white/60">
-            {searching
-              ? "Products search ho rahe hain..."
-              : "Loading products..."}
+            {searching ? "Searching products..." : "Loading products..."}
           </p>
         )}
 
@@ -449,8 +447,8 @@ export default function CategoryPage() {
 
                       {product.isTopMatch && (
                         <p className="mt-4 text-xs text-blue-300/80">
-                          Exact Groq analysis available nahi; reviews aur price
-                          ke basis par top match.
+                          Exact Groq analysis is not available; this top match
+                          is based on reviews and price.
                         </p>
                       )}
                     </div>

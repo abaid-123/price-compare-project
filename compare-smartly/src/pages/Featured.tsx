@@ -137,12 +137,12 @@ export default function Featured() {
           setActiveIndex(0);
         } else {
           setProducts([]);
-          setError(data.error || "Featured products load nahi ho sake.");
+          setError(data.error || "Featured products could not be loaded.");
         }
       } catch (error) {
         console.error("Featured products error:", error);
         setProducts([]);
-        setError("Featured products load nahi ho sake.");
+        setError("Featured products could not be loaded.");
       } finally {
         setLoading(false);
       }
