@@ -15,6 +15,9 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
+  "https://price-compare-frontend-three.vercel.app",
+  "https://compare-smartly.store",
+  "https://www.compare-smartly.store",
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
