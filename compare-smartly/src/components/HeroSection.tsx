@@ -115,9 +115,7 @@ export default function HeroSection() {
   }
 
   
-  const tagline =
-    websiteSettings?.tagline ||
-    "Find the best deals across hundreds of online stores with AI-powered recommendations.";
+ 
   const primaryColor = websiteSettings?.primaryColor || "#2563eb";
 
   return (
@@ -139,9 +137,7 @@ export default function HeroSection() {
             <span className="text-white/85">Save Money Instantly</span>
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-sm md:text-lg text-white/60 leading-relaxed">
-            {tagline}
-          </p>
+          
 
           <div className="mx-auto mt-7 max-w-2xl">
             <div
