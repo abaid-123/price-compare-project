@@ -1,8 +1,12 @@
 import AdminSidebar from "../../components/admin/AdminSidebar";
-import { Play, Square } from "lucide-react";
-import { API_BASE_URL } from "../../config/api";
+// import { Play, Square } from "lucide-react";
+// import { API_BASE_URL } from "../../config/api";
 
 export default function AdminProducts() {
+  /*
+  Start/Stop scraper feature disabled.
+  Ab scraper manual command ya GitHub Actions cron job se run hoga.
+
   const startDarazScraper = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -50,6 +54,7 @@ export default function AdminProducts() {
       alert("Something went wrong while stopping scraper");
     }
   };
+  */
 
   return (
     <div className="min-h-screen bg-[#050815] text-white flex">
@@ -64,11 +69,17 @@ export default function AdminProducts() {
         </div>
 
         <div className="rounded-2xl bg-[#0B1024] border border-white/10 p-5 md:p-6 w-full max-w-2xl">
-          <h3 className="text-lg md:text-xl font-bold mb-2">Daraz Scraper</h3>
+          <h3 className="text-lg md:text-xl font-bold mb-2">
+            Product Scraper
+          </h3>
 
-          <p className="text-white/50 text-sm mb-6">
-            Start or stop Daraz product scraping from admin panel.
+          <p className="text-white/50 text-sm">
+            Start/stop scraper feature is disabled. Scraper will be run manually
+            from terminal or automatically through GitHub Actions cron job.
           </p>
+
+          {/*
+          Start/Stop buttons disabled.
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
@@ -87,6 +98,7 @@ export default function AdminProducts() {
               Stop Daraz Scraper
             </button>
           </div>
+          */}
         </div>
       </main>
     </div>
